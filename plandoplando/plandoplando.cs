@@ -18,6 +18,7 @@ namespace plandoplando
     {
         public static string filePath => Path.GetFullPath(Application.dataPath + "/Managed/Mods/Plando/plando.xml");
         public bool xmlLoaded;
+        public bool xmlFound = File.Exists(filePath);
 
         public plandoplando()
         {
@@ -48,7 +49,7 @@ namespace plandoplando
 
         public override string GetVersion()
         {
-            return xmlLoaded ? !string.IsNullOrEmpty(XmlManager.title) ? XmlManager.title : "TITLE NOT FOUND" : "XML NOT LOADED";
+            return xmlFound ? xmlLoaded ? !string.IsNullOrEmpty(XmlManager.title) ? XmlManager.title : "TITLE NOT FOUND" : "XML NOT LOADED" : "NO XML AT FILEPATH";
         }
 
         public override List<(string, string)> GetPreloadNames()

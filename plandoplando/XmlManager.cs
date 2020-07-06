@@ -182,10 +182,16 @@ namespace plandoplando
                 settings = new ItemChangerSettings();
                 foreach (FieldInfo field in typeof(ItemChangerSettings).GetFields(BindingFlags.Instance | BindingFlags.Public))
                 {
-                    XmlNode node = doc.SelectSingleNode("randomizer/" + field.Name);
-                    if (node is XmlNode && bool.TryParse(node.InnerText, out bool value))
+                    if (doc.SelectSingleNode("randomizer/" + field.Name) is XmlNode node)
                     {
-                        field.SetValue(settings, value);
+                        if (field.FieldType == typeof(bool) && bool.TryParse(node.InnerText, out bool value))
+                        {
+                            field.SetValue(settings, value);
+                        }
+                        else if (field.FieldType == typeof(HashSet<string>))
+                        {
+                            field.SetValue(settings, new HashSet<string>(node.SelectNodes("sceneName").Cast<XmlNode>().Select(_node => _node.InnerText)));
+                        }
                     }
                 }
             }
@@ -295,14 +301,23 @@ namespace plandoplando
                         case "Baldur":
                             changeSceneActions.Add(new DeployBaldurAction
                             {
-                                enemy = new DeployObjectAction("Fungus1_28", "Battle Music/Blocker 1")
+                                enemy = bool.Parse(node["paramTwo"].InnerText) ? // facingRight
+                                new DeployObjectAction("Fungus1_28", "Battle Music/Blocker 1")
                                 {
                                     deploySceneName = node["deploySceneName"].InnerText,
                                     x = float.Parse(node["deployOneX"].InnerText),
                                     y = float.Parse(node["deployOneY"].InnerText)
-                                },
+                                }
+                                :
+                                new DeployObjectAction("Fungus1_28", "Battle Music/Blocker 2")
+                                {
+                                    deploySceneName = node["deploySceneName"].InnerText,
+                                    x = float.Parse(node["deployOneX"].InnerText),
+                                    y = float.Parse(node["deployOneY"].InnerText)
+                                }
+                                ,
                                 hp = Int32.Parse(node["paramOne"].InnerText),
-                                facingRight = bool.Parse(node["paramTwo"].InnerText)
+                                
                             });
                             break;
 
@@ -334,6 +349,37 @@ namespace plandoplando
                                     y = float.Parse(node["deployOneY"].InnerText)
                                 },
                                 entryGate = node["paramOne"].InnerText
+                            });
+                            break;
+
+                        case "Sawblade":
+                            changeSceneActions.Add(new DeployObjectAction("White_Palace_18", "saw_collection/wp_saw (6)")
+                            {
+                                deploySceneName = node["deploySceneName"].InnerText,
+                                x = float.Parse(node["deployOneX"].InnerText),
+                                y = float.Parse(node["deployOneY"].InnerText)
+                            });
+                            break;
+
+                        case "Soul Totem":
+                            changeSceneActions.Add(new DeployObjectAction("White_Palace_18", "Soul Totem white_Infinte")
+                            {
+                                deploySceneName = node["deploySceneName"].InnerText,
+                                x = float.Parse(node["deployOneX"].InnerText),
+                                y = float.Parse(node["deployOneY"].InnerText)
+                            });
+                            break;
+
+                        case "Spike":
+                            changeSceneActions.Add(new DeployRotatedObjectAction
+                            {
+                                Object = new DeployObjectAction("Crossroads_25", "Cave Spikes tile (5)")
+                                {
+                                    deploySceneName = node["deploySceneName"].InnerText,
+                                    x = float.Parse(node["deployOneX"].InnerText),
+                                    y = float.Parse(node["deployOneY"].InnerText)
+                                },
+                                rotation = float.Parse(node["paramOne"].InnerText)
                             });
                             break;
                     }

@@ -2,10 +2,12 @@
 using HutongGames.PlayMaker.Actions;
 using SeanprCore;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace plandoplando
 {
@@ -54,7 +56,7 @@ namespace plandoplando
             {
                 g.name = objName + (int)x + (int)y;
                 item.persistentBoolData.id = g.name;
-                item.persistentBoolData.sceneName = GameManager.instance.sceneName;
+                item.persistentBoolData.sceneName = deploySceneName;
                 item.persistentBoolData.activated = GameManager.instance.sceneData.FindMyState(item.persistentBoolData)?.activated ?? false;
             }
 
@@ -163,9 +165,7 @@ namespace plandoplando
         public void OnChangeScene(string sceneName)
         {
             if (sceneName != enemy.deploySceneName) return;
-
             GameObject e = enemy.DeployAndReturn();
-            e.LocateFSM("Blocker Control").FsmVariables.FindFsmBool("Facing Right").Value = facingRight;
             e.LocateFSM("Blocker Control").GetState("Can Roller?").RemoveActionsOfType<IntCompare>();
             e.GetComponent<HealthManager>().hp = hp;
         }
@@ -189,6 +189,19 @@ namespace plandoplando
         }
     }
 
+    public class DeployRotatedObjectAction : ChangeSceneAction
+    {
+        public DeployObjectAction Object;
+        public float rotation;
+
+        public void OnChangeScene(string sceneName)
+        {
+            if (sceneName != Object.deploySceneName) return;
+            GameObject g = Object.DeployAndReturn();
+            g.transform.SetRotation2D(rotation);
+        }
+    }
+
     public class DestroyObjectAction : ChangeSceneAction
     {
         public string originalSceneName;
@@ -199,9 +212,57 @@ namespace plandoplando
         {
             if (sceneName != originalSceneName) return;
 
-            if (GameObject.Find(originalObjectName) is GameObject obj)
+            GameObject g = new GameObject();
+            Destroyer d = g.AddComponent<Destroyer>();
+            d.originalSceneName = originalSceneName;
+            d.originalObjectName = originalObjectName;
+            d.destroyAllThatMatch = destroyAllThatMatch;
+            d.Start();
+        }
+
+        public class Destroyer : MonoBehaviour
+        {
+
+            public string originalSceneName;
+            public string originalObjectName;
+            public bool destroyAllThatMatch;
+            bool finished;
+
+            public void Start() { StartCoroutine(DestroyCoroutine()); }
+
+            IEnumerator DestroyCoroutine()
             {
-                GameObject.Destroy(obj);
+                while (!finished)
+                {
+                    Destroy();
+                    yield return new WaitForSeconds(0.1f);
+                }
+                GameObject.Destroy(gameObject);
+            }
+
+            public void Destroy()
+            {
+                if (GameManager.instance.sceneName != originalSceneName) GameObject.Destroy(this.gameObject);
+
+                if (!destroyAllThatMatch)
+                {
+                    if (GameObject.Find(originalObjectName) is GameObject g)
+                    {
+                        GameObject.Destroy(g);
+                        finished = true;
+                    }
+                }
+                else
+                {
+                    foreach (GameObject g in GameObject.FindObjectsOfType<GameObject>())
+                    {
+                        if (g.name.Contains(originalObjectName)) 
+                        {
+                            GameObject.Destroy(g);
+                            finished = true;
+                        }
+                    }
+                }
             }
         }
     }
