@@ -8,7 +8,7 @@ using ItemChanger.Default;
 using UnityEngine;
 using System.IO;
 using System.Reflection;
-using SeanprCore;
+using SereCore;
 using UnityEngine.SceneManagement;
 using HutongGames.PlayMaker.Actions;
 
